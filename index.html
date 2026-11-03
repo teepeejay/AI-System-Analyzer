@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // Gracefully handle Vite WebSocket / HMR disconnection in preview environments
+      window.addEventListener('unhandledrejection', function (e) {
+        var reason = e && (e.reason || e.detail && e.detail.reason);
+        var msg = (reason && (reason.message || reason.stack || String(reason))) || '';
+        if (msg.indexOf('WebSocket') !== -1 || msg.indexOf('vite') !== -1) {
+          e.preventDefault && e.preventDefault();
+          e.stopImmediatePropagation && e.stopImmediatePropagation();
+        }
+      });
+      window.addEventListener('error', function (e) {
+        var msg = (e && (e.message || e.filename || '')) || '';
+        if (msg.indexOf('@vite/client') !== -1 || msg.indexOf('WebSocket') !== -1) {
+          e.preventDefault && e.preventDefault();
+          e.stopImmediatePropagation && e.stopImmediatePropagation();
+        }
+      });
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sentinel AI - IT Endpoint Diagnostics & SRE Console</title>
+    <meta name="description" content="Enterprise AI-powered endpoint diagnostics and reliability engineering platform with multi-OS telemetry, runbook cross-referencing, and triaged incident analysis." />
+    <meta property="og:title" content="Sentinel AI - IT Endpoint Diagnostics & SRE Console" />
+    <meta property="og:description" content="Enterprise AI-powered endpoint diagnostics and reliability engineering platform with multi-OS telemetry, runbook cross-referencing, and triaged incident analysis." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
