@@ -14,19 +14,20 @@ import { RunbooksLibrary } from './components/RunbooksLibrary.js';
 import { ArchitectureDocTab } from './components/ArchitectureDocTab.js';
 import { TelemetryIngestModal } from './components/TelemetryIngestModal.js';
 import { ScannerSpecModal } from './components/ScannerSpecModal.js';
-import { SAMPLE_ENDPOINTS } from './data/sampleEndpoints.js';
+import { ScanCommandModal } from './components/ScanCommandModal.js';
 import { EndpointTelemetry } from './types/sentinel.js';
-import { Server, Sparkles } from 'lucide-react';
+import { Server, Sparkles, Terminal } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'fleet' | 'runbooks' | 'architecture'>('fleet');
   const [viewMode, setViewMode] = useState<'simplified' | 'advanced'>('simplified');
-  const [endpoints, setEndpoints] = useState<EndpointTelemetry[]>(SAMPLE_ENDPOINTS);
-  const [selectedEndpointId, setSelectedEndpointId] = useState<string | null>(SAMPLE_ENDPOINTS[0].id);
-  const [selectedEndpointTelemetry, setSelectedEndpointTelemetry] = useState<EndpointTelemetry | null>(SAMPLE_ENDPOINTS[0]);
+  const [endpoints, setEndpoints] = useState<EndpointTelemetry[]>([]);
+  const [selectedEndpointId, setSelectedEndpointId] = useState<string | null>(null);
+  const [selectedEndpointTelemetry, setSelectedEndpointTelemetry] = useState<EndpointTelemetry | null>(null);
   const [isLoadingFleet, setIsLoadingFleet] = useState(false);
   const [isIngestModalOpen, setIsIngestModalOpen] = useState(false);
   const [isScannerSpecModalOpen, setIsScannerSpecModalOpen] = useState(false);
+  const [isScanCommandModalOpen, setIsScanCommandModalOpen] = useState(false);
 
   // Fetch fleet list from backend API
   const refreshFleet = async () => {
@@ -35,18 +36,28 @@ export default function App() {
       const res = await fetch('/api/endpoints');
       if (res.ok) {
         const listData = await res.json();
-        if (listData.endpoints && listData.endpoints.length > 0) {
-          if (selectedEndpointId) {
-            const detailRes = await fetch(`/api/endpoints/${selectedEndpointId}`);
-            if (detailRes.ok) {
-              const detailData = await detailRes.json();
-              setSelectedEndpointTelemetry(detailData);
-            }
-          }
+        const incomingEndpoints: EndpointTelemetry[] = listData.endpoints || [];
+        setEndpoints(incomingEndpoints);
+
+        if (incomingEndpoints.length === 0) {
+          // Clear selected endpoint and its telemetry when backend returns an empty list
+          setSelectedEndpointId(null);
+          setSelectedEndpointTelemetry(null);
+        } else {
+          // Preserve current selection if it still exists in the incoming list,
+          // otherwise automatically select the first real endpoint
+          setSelectedEndpointId((prevId) => {
+            const exists = prevId ? incomingEndpoints.find((e) => e.id === prevId) : null;
+            const targetId = exists ? exists.id : incomingEndpoints[0].id;
+            const targetTelemetry = exists || incomingEndpoints[0];
+            setSelectedEndpointTelemetry(targetTelemetry);
+            return targetId;
+          });
         }
       }
-    } catch {
-      // Backend fallback already initialized with SAMPLE_ENDPOINTS
+    } catch (err) {
+      console.error('Failed to retrieve endpoints from backend API:', err);
+      // Clean error handling without inserting any mock/sample data
     } finally {
       setIsLoadingFleet(false);
     }
@@ -54,6 +65,9 @@ export default function App() {
 
   useEffect(() => {
     refreshFleet();
+    // Poll backend periodically so incoming probe uploads appear automatically
+    const interval = setInterval(refreshFleet, 4000);
+    return () => clearInterval(interval);
   }, []);
 
   // Update selected telemetry when endpoint selection changes
@@ -70,8 +84,8 @@ export default function App() {
         const data = await res.json();
         setSelectedEndpointTelemetry(data);
       }
-    } catch {
-      // Fallback already set from local
+    } catch (err) {
+      console.error(`Failed to fetch details for endpoint ${id}:`, err);
     }
   };
 
@@ -91,6 +105,7 @@ export default function App() {
       <Header
         onOpenIngest={() => setIsIngestModalOpen(true)}
         onOpenScannerSpec={() => setIsScannerSpecModalOpen(true)}
+        onOpenScanCommand={() => setIsScanCommandModalOpen(true)}
         activeTab={activeTab}
         setActiveTab={(t) => setActiveTab(t as any)}
         endpointCount={endpoints.length}
@@ -114,6 +129,7 @@ export default function App() {
                   selectedEndpointId={selectedEndpointId}
                   onSelectEndpoint={handleSelectEndpoint}
                   onOpenIngest={() => setIsIngestModalOpen(true)}
+                  onOpenScanCommand={() => setIsScanCommandModalOpen(true)}
                 />
 
                 {selectedEndpointTelemetry ? (
@@ -137,6 +153,7 @@ export default function App() {
                   selectedEndpointId={selectedEndpointId}
                   onSelectEndpoint={handleSelectEndpoint}
                   onOpenIngest={() => setIsIngestModalOpen(true)}
+                  onOpenScanCommand={() => setIsScanCommandModalOpen(true)}
                 />
 
                 {selectedEndpointTelemetry ? (
@@ -189,6 +206,11 @@ export default function App() {
       <ScannerSpecModal
         isOpen={isScannerSpecModalOpen}
         onClose={() => setIsScannerSpecModalOpen(false)}
+      />
+
+      <ScanCommandModal
+        isOpen={isScanCommandModalOpen}
+        onClose={() => setIsScanCommandModalOpen(false)}
       />
     </div>
   );

@@ -35,53 +35,55 @@ export const FriendlyTelemetryInspector: React.FC<FriendlyTelemetryInspectorProp
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
   const [copiedCmd, setCopiedCmd] = useState(false);
 
-  // Friendly plain-language interpretation based on the diagnosis
+  // Friendly plain-language interpretation based dynamically on real endpoint telemetry
   const getFriendlyDiagnosis = (ep: EndpointTelemetry) => {
+    const failedServices = ep.services.filter((s) => s.status === 'failed');
+    const isLinux = ep.system.platform === 'linux';
+    const isWindows = ep.system.platform === 'windows';
+    const isMac = ep.system.platform === 'darwin';
+
     if (ep.reportedSeverity === 'CRITICAL') {
+      const fixCmd = failedServices.length > 0
+        ? (isLinux ? `systemctl status ${failedServices[0].name} --no-pager && journalctl -u ${failedServices[0].name} -n 50 --no-pager` : isWindows ? `Get-Service -Name ${failedServices[0].name} | Select-Object -Property *` : `sudo launchctl list | grep -i ${failedServices[0].name}`)
+        : (isLinux ? 'dmesg -T | grep -E -i "oom|error|critical|killed" | tail -n 30' : isWindows ? 'Get-EventLog -LogName System -EntryType Error -Newest 15' : 'sudo dmesg | tail -n 30');
+
       return {
-        issueTitle: 'Memory Overload caused the API Backend to stop',
-        issueDescription:
-          'A Node.js worker process consumed nearly all 16 GB of system RAM, triggering the Linux kernel safety mechanism (OOM-killer) which terminated the process to protect the operating system.',
-        recommendedFixTitle: 'Restart the API service cleanly and monitor memory',
-        safeCommand: 'systemctl restart api-backend.service && systemctl status api-backend.service --no-pager',
-        commandReason: 'This safely brings the backend service back online with fresh memory allocations.',
-        impact: 'External API requests are currently failing with 502 Bad Gateway.',
-        targetOS: 'Linux',
+        issueTitle: ep.alertSummary || 'Critical Incident Detected on System',
+        issueDescription: failedServices.length > 0
+          ? `Detected ${failedServices.length} failed service(s): ${failedServices.map((s) => s.name).join(', ')}. Immediate investigation is recommended.`
+          : 'High system resource exhaustion or critical kernel/daemon errors detected in telemetry.',
+        recommendedFixTitle: failedServices.length > 0 ? `Inspect logs for ${failedServices[0].name}` : 'Inspect system error log traces',
+        safeCommand: fixCmd,
+        commandReason: 'Safely queries system logs to isolate the error cause without changing system configurations.',
+        impact: 'Service degradation or unexpected application termination.',
+        targetOS: isLinux ? 'Linux' : isWindows ? 'Windows' : isMac ? 'macOS' : 'Host OS',
       };
     }
-    if (ep.reportedSeverity === 'HIGH') {
+    if (ep.reportedSeverity === 'HIGH' || ep.reportedSeverity === 'MEDIUM') {
+      const fixCmd = failedServices.length > 0
+        ? (isLinux ? `systemctl status ${failedServices[0].name} --no-pager` : isWindows ? `Get-Service -Name ${failedServices[0].name}` : 'sudo launchctl list')
+        : (isLinux ? 'uptime && free -h && df -h' : isWindows ? 'Get-Process | Sort-Object -Descending CPU | Select-Object -First 10' : 'top -l 1 | head -n 25');
+
       return {
-        issueTitle: 'Print Spooler service froze due to port exhaustion',
-        issueDescription:
-          'Multiple stuck background print jobs caused the Windows Print Spooler (spoolsv.exe) to crash and lock dynamic network communication ports.',
-        recommendedFixTitle: 'Clear corrupted print files and restart Spooler',
-        safeCommand: 'Stop-Service -Name Spooler -Force; Remove-Item "$env:SystemRoot\\System32\\spool\\PRINTERS\\*.*" -Force; Start-Service -Name Spooler',
-        commandReason: 'Removes damaged spool queue files and relaunches the service with clear RPC sockets.',
-        impact: 'Network printing and remote printer management are unresponsive.',
-        targetOS: 'Windows',
-      };
-    }
-    if (ep.reportedSeverity === 'MEDIUM') {
-      return {
-        issueTitle: 'Drive capacity at 97% due to local snapshot backups',
-        issueDescription:
-          'Local APFS Time Machine snapshot copies have accumulated on the internal SSD drive, consuming 968 GB of storage.',
-        recommendedFixTitle: 'Thin local snapshots to reclaim 10 GB+ safely',
-        safeCommand: 'tmutil thinlocalsnapshots / 10000000000 4',
-        commandReason: 'Requests macOS to release purgeable snapshot space without altering user documents or files.',
-        impact: 'Large compile jobs or downloads may fail due to lack of temporary disk space.',
-        targetOS: 'macOS',
+        issueTitle: ep.alertSummary || 'Elevated Warnings or Resource Saturation',
+        issueDescription: failedServices.length > 0
+          ? `Non-critical service failures or abnormal units noted: ${failedServices.map((s) => s.name).join(', ')}.`
+          : 'Resource pressure or background warning events detected by discovery probe.',
+        recommendedFixTitle: 'Investigate system resource usage and service states',
+        safeCommand: fixCmd,
+        commandReason: 'Collects active health diagnostics to verify headroom without mutating system files.',
+        impact: 'May cause elevated latency or background task delays.',
+        targetOS: isLinux ? 'Linux' : isWindows ? 'Windows' : isMac ? 'macOS' : 'Host OS',
       };
     }
     return {
       issueTitle: 'System is running normally with no issues detected',
-      issueDescription:
-        'All CPU, memory, and database replication health checks are well within normal operational thresholds.',
+      issueDescription: `All monitored services, CPU cores (${ep.hardware.cpuCores}), RAM (${ep.hardware.memory.usedPercent}% used), and disk partitions on ${ep.system.hostname} are well within normal operational thresholds.`,
       recommendedFixTitle: 'No remediation needed',
-      safeCommand: 'echo "System nominal"',
+      safeCommand: isLinux ? 'uptime && systemctl is-system-running' : isWindows ? 'Get-ComputerInfo -Property OsName, WindowsUptime' : 'uptime',
       commandReason: 'Continues automated routine background health monitoring.',
       impact: 'Zero customer or operational impact.',
-      targetOS: 'All',
+      targetOS: isLinux ? 'Linux' : isWindows ? 'Windows' : isMac ? 'macOS' : 'Host OS',
     };
   };
 

@@ -11,7 +11,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import dotenv from 'dotenv';
-import { SAMPLE_ENDPOINTS } from './src/data/sampleEndpoints.js';
 import { INTERNAL_RUNBOOKS } from './src/data/runbooks.js';
 import { EndpointTelemetry } from './src/types/sentinel.js';
 
@@ -25,11 +24,8 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json({ limit: '10mb' }));
 
-// In-memory fleet storage seeded with realistic sample endpoints
+// In-memory fleet storage populated exclusively by real incoming telemetry scans
 const fleetStore: Map<string, EndpointTelemetry> = new Map();
-SAMPLE_ENDPOINTS.forEach((ep) => {
-  fleetStore.set(ep.id, ep);
-});
 
 // API Routes
 app.get('/api/health', (_req: Request, res: Response) => {
@@ -71,19 +67,7 @@ app.get('/api/pipeline/status', (_req: Request, res: Response) => {
 });
 
 app.get('/api/endpoints', (_req: Request, res: Response) => {
-  const endpoints = Array.from(fleetStore.values()).map((ep) => ({
-    id: ep.id,
-    hostname: ep.system.hostname,
-    platform: ep.system.platform,
-    osName: ep.system.osName,
-    ip: ep.system.ipAddresses[0] || '127.0.0.1',
-    reportedSeverity: ep.reportedSeverity,
-    alertSummary: ep.alertSummary || 'No active alerts',
-    cpuPercent: ep.hardware.cpuUtilizationPercent,
-    memPercent: ep.hardware.memory.usedPercent,
-    diskPercent: ep.hardware.disks[0]?.usedPercent || 0,
-    lastScanned: ep.probeMetadata.scanTimestamp,
-  }));
+  const endpoints = Array.from(fleetStore.values());
   res.json({ endpoints });
 });
 

@@ -13,7 +13,8 @@ import {
   Clock, 
   ExternalLink,
   Filter,
-  BarChart3
+  BarChart3,
+  Terminal
 } from 'lucide-react';
 
 interface FleetOverviewProps {
@@ -21,6 +22,7 @@ interface FleetOverviewProps {
   selectedEndpointId: string | null;
   onSelectEndpoint: (id: string) => void;
   onOpenIngest: () => void;
+  onOpenScanCommand?: () => void;
 }
 
 export const FleetOverview: React.FC<FleetOverviewProps> = ({
@@ -28,6 +30,7 @@ export const FleetOverview: React.FC<FleetOverviewProps> = ({
   selectedEndpointId,
   onSelectEndpoint,
   onOpenIngest,
+  onOpenScanCommand,
 }) => {
   const [osFilter, setOsFilter] = useState<'all' | OperatingSystem>('all');
   const [severityFilter, setSeverityFilter] = useState<'all' | IncidentSeverity>('all');
@@ -139,7 +142,9 @@ export const FleetOverview: React.FC<FleetOverviewProps> = ({
             <span className="text-2xl font-bold text-rose-400">{criticalCount}</span>
             <span className="text-xs text-slate-400">Requires Immediate Triage</span>
           </div>
-          <div className="mt-2 text-[11px] text-rose-400/80">OOM Killer / Process Failure</div>
+          <div className="mt-2 text-[11px] text-rose-400/80">
+            {criticalCount > 0 ? `${criticalCount} node(s) require triage` : 'No critical incidents detected'}
+          </div>
         </div>
 
         <div className="bg-slate-900 border border-amber-900/30 rounded-xl p-4 shadow-sm">
@@ -151,7 +156,9 @@ export const FleetOverview: React.FC<FleetOverviewProps> = ({
             <span className="text-2xl font-bold text-amber-400">{highCount + mediumCount}</span>
             <span className="text-xs text-slate-400">Degraded Services</span>
           </div>
-          <div className="mt-2 text-[11px] text-amber-400/80">Port / APFS disk pressure</div>
+          <div className="mt-2 text-[11px] text-amber-400/80">
+            {highCount + mediumCount > 0 ? `${highCount + mediumCount} node(s) with warnings` : 'No warning incidents detected'}
+          </div>
         </div>
 
         <div className="bg-slate-900 border border-emerald-900/30 rounded-xl p-4 shadow-sm">
@@ -163,7 +170,9 @@ export const FleetOverview: React.FC<FleetOverviewProps> = ({
             <span className="text-2xl font-bold text-emerald-400">{nominalCount}</span>
             <span className="text-xs text-slate-400">Health checks green</span>
           </div>
-          <div className="mt-2 text-[11px] text-emerald-400/80">Replicas synced, SLA 99.9%</div>
+          <div className="mt-2 text-[11px] text-emerald-400/80">
+            {nominalCount > 0 ? `${nominalCount} healthy node(s)` : 'No endpoints registered yet'}
+          </div>
         </div>
       </div>
 
@@ -241,15 +250,35 @@ export const FleetOverview: React.FC<FleetOverviewProps> = ({
           </div>
         </div>
 
-        <div className="relative flex-1 max-w-sm">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Filter hostname, IP, error..."
-            className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-          />
+        <div className="flex items-center gap-2 flex-1 justify-end">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filter hostname, IP, error..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+
+          {onOpenScanCommand && (
+            <button
+              onClick={onOpenScanCommand}
+              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 shadow-sm"
+              title="Get 1-line automated scan command"
+            >
+              <Terminal className="w-3.5 h-3.5" />
+              <span>Copy Scan Command</span>
+            </button>
+          )}
+
+          <button
+            onClick={onOpenIngest}
+            className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition-colors shrink-0"
+          >
+            + Ingest
+          </button>
         </div>
       </div>
 
@@ -270,8 +299,17 @@ export const FleetOverview: React.FC<FleetOverviewProps> = ({
             <tbody className="divide-y divide-slate-800/60 font-normal">
               {filteredEndpoints.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
-                    No endpoints match the selected filters.
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                    <div className="space-y-1.5">
+                      <p className="text-sm font-semibold text-slate-300">
+                        {endpoints.length === 0 ? 'No endpoints registered yet' : 'No endpoints match the selected filters'}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {endpoints.length === 0
+                          ? 'Run the Python discovery scanner on any machine to transmit live telemetry to this dashboard.'
+                          : 'Try clearing the search query or OS / severity filters.'}
+                      </p>
+                    </div>
                   </td>
                 </tr>
               ) : (

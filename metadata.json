@@ -2,6 +2,7 @@
   "name": "Sentinel AI - IT Endpoint Diagnostics & SRE Console",
   "description": "Enterprise AI-powered endpoint diagnostics and reliability engineering platform with multi-OS telemetry, runbook cross-referencing, and triaged incident analysis.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
-

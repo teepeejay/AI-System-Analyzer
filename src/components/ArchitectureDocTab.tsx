@@ -130,9 +130,9 @@ export const ArchitectureDocTab: React.FC = () => {
           </div>
 
           <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2 font-mono">
-            <div className="text-indigo-400 font-bold">/src/data/sampleEndpoints.ts</div>
+            <div className="text-indigo-400 font-bold">/scripts/sentinel_probe.py</div>
             <p className="text-slate-400 font-sans text-[11px] leading-relaxed">
-              Real-world telemetry datasets covering Linux OOM incidents, Windows RPC/Spooler hangs, and macOS APFS snapshot pressure.
+              Read-only passive Python discovery scanner deployed to physical or virtual endpoints, streaming live telemetry to the central API.
             </p>
           </div>
 

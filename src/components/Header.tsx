@@ -4,6 +4,7 @@ import { Shield, Server, Activity, Terminal, Clock, RefreshCw, Cpu, Layers, Spar
 interface HeaderProps {
   onOpenIngest: () => void;
   onOpenScannerSpec: () => void;
+  onOpenScanCommand?: () => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   endpointCount: number;
@@ -14,6 +15,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   onOpenIngest,
   onOpenScannerSpec,
+  onOpenScanCommand,
   activeTab,
   setActiveTab,
   endpointCount,
@@ -120,13 +122,24 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Python Probe</span>
             </button>
 
+            {onOpenScanCommand && (
+              <button
+                onClick={onOpenScanCommand}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+                title="Get 1-line automated scan command for Linux, Mac, or Windows"
+              >
+                <Terminal className="w-3.5 h-3.5" />
+                <span className="font-medium">Copy Scan Command</span>
+              </button>
+            )}
+
             <button
               onClick={onOpenIngest}
               className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1.5 transition-colors shadow-sm"
               title="Ingest new telemetry scan"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Scan / Ingest</span>
+              <span className="hidden sm:inline">Manual Ingest</span>
             </button>
           </div>
         </div>
