@@ -1,4 +1,4 @@
-## About the Project
+About the Project
 
 This AI-System Analyzer is intended to be a useful tool for people who may not have extensive technical knowledge. 
 Many users don't have the expertise to troubleshoot problems with their machines or know where to begin researching an issue.
@@ -48,3 +48,10 @@ The project brings system scanning, AI-assisted troubleshooting, and system info
 5. Future Improvements
 
 Future improvements include expanding support for different operating systems, improving the accuracy of AI-generated recommendations, and introducing additional troubleshooting and automated repair capabilities.
+
+
+
+Overall Results
+
+1. Compatibility with 3 different platforms (Linux, Mac and Windows)
+2. Average of 70 metrics scanned per system.
