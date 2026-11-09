@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { EndpointTelemetry, OperatingSystem } from '../types/sentinel.js';
+import { countScannedMetrics } from '../utils/metricCounter.js';
 import { 
   Server, 
   AlertCircle, 
@@ -8,9 +9,10 @@ import {
   Search, 
   Cpu, 
   HardDrive, 
-  Activity,
-  Layers,
-  Sparkles
+  Activity, 
+  Layers, 
+  Sparkles,
+  BarChart3
 } from 'lucide-react';
 
 interface FriendlyFleetViewProps {
@@ -197,6 +199,7 @@ export const FriendlyFleetView: React.FC<FriendlyFleetViewProps> = ({
           const cpuPercent = ep.hardware.cpuUtilizationPercent;
           const memPercent = ep.hardware.memory.usedPercent;
           const diskPercent = ep.hardware.disks[0]?.usedPercent || 0;
+          const metricCount = countScannedMetrics(ep);
 
           return (
             <div
@@ -214,8 +217,12 @@ export const FriendlyFleetView: React.FC<FriendlyFleetViewProps> = ({
                     {osInfo.icon}
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-bold text-white text-base font-mono">{ep.system.hostname}</h3>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-800 text-indigo-300 border border-indigo-500/20">
+                        <BarChart3 className="w-3 h-3 text-indigo-400" />
+                        {metricCount.totalScanned} Scanned Items
+                      </span>
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5">
                       {osInfo.label} • {ep.system.ipAddresses[0] || '127.0.0.1'}

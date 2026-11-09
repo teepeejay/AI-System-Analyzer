@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { EndpointTelemetry, LogLevel } from '../types/sentinel.js';
+import { countScannedMetrics } from '../utils/metricCounter.js';
+import { ScannedMetricsSection } from './ScannedMetricsSection.js';
 import { 
   Server, 
   Cpu, 
@@ -16,7 +18,8 @@ import {
   Network,
   ShieldAlert,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  BarChart3
 } from 'lucide-react';
 
 interface TelemetryInspectorProps {
@@ -30,10 +33,12 @@ export const TelemetryInspector: React.FC<TelemetryInspectorProps> = ({
   onClose,
   onOpenRunbooks,
 }) => {
-  const [activeTab, setActiveTab] = useState<'metrics' | 'processes' | 'services' | 'logs' | 'raw'>('metrics');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'processes' | 'services' | 'logs' | 'inventory' | 'raw'>('metrics');
   const [copiedRaw, setCopiedRaw] = useState(false);
   const [logFilter, setLogFilter] = useState<'all' | LogLevel>('all');
   const [processSearch, setProcessSearch] = useState('');
+
+  const metricData = countScannedMetrics(endpoint);
 
   const handleCopyRaw = () => {
     navigator.clipboard.writeText(JSON.stringify(endpoint, null, 2));
@@ -103,6 +108,11 @@ export const TelemetryInspector: React.FC<TelemetryInspectorProps> = ({
                 <span>IP: {endpoint.system.ipAddresses.join(', ')}</span>
                 <span>•</span>
                 <span>Uptime: {Math.floor(endpoint.system.uptimeSeconds / 3600)}h {Math.floor((endpoint.system.uptimeSeconds % 3600) / 60)}m</span>
+                <span>•</span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                  <BarChart3 className="w-3 h-3 text-indigo-400" />
+                  {metricData.totalScanned} Items Scanned
+                </span>
               </div>
             </div>
           </div>
@@ -147,6 +157,18 @@ export const TelemetryInspector: React.FC<TelemetryInspectorProps> = ({
         >
           <Cpu className="w-3.5 h-3.5" />
           Hardware & Resources
+        </button>
+
+        <button
+          onClick={() => setActiveTab('inventory')}
+          className={`py-3 px-3 text-xs font-medium border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap ${
+            activeTab === 'inventory'
+              ? 'border-indigo-500 text-white font-semibold'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <BarChart3 className="w-3.5 h-3.5 text-indigo-400" />
+          Scanned Inventory ({metricData.totalScanned})
         </button>
 
         <button
@@ -203,6 +225,30 @@ export const TelemetryInspector: React.FC<TelemetryInspectorProps> = ({
         {/* 1. Hardware & Resources */}
         {activeTab === 'metrics' && (
           <div className="space-y-6">
+            {/* Scanned Metrics Quick Bar */}
+            <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400">
+                  <BarChart3 className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-semibold text-white">
+                    {metricData.totalScanned} Total Items Scanned
+                  </span>
+                  <span className="text-slate-400 text-[11px] ml-2">
+                    ({metricData.categories.map(c => `${c.count} ${c.label}`).join(' • ')})
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveTab('inventory')}
+                className="px-2.5 py-1 text-[11px] font-semibold text-indigo-300 hover:text-white rounded bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 transition-colors flex items-center gap-1 shrink-0"
+              >
+                <span>View Complete Inventory</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* CPU Box */}
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
@@ -512,6 +558,13 @@ export const TelemetryInspector: React.FC<TelemetryInspectorProps> = ({
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Scanned Metrics Inventory Tab */}
+        {activeTab === 'inventory' && (
+          <div className="space-y-4">
+            <ScannedMetricsSection endpoint={endpoint} variant="dense" defaultExpanded={true} />
           </div>
         )}
 

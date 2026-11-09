@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { EndpointTelemetry } from '../types/sentinel.js';
+import { countScannedMetrics } from '../utils/metricCounter.js';
+import { ScannedMetricsSection } from './ScannedMetricsSection.js';
 import { 
   Server, 
   AlertTriangle, 
@@ -15,7 +17,8 @@ import {
   Activity, 
   ArrowRight,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  BarChart3
 } from 'lucide-react';
 
 interface FriendlyTelemetryInspectorProps {
@@ -100,12 +103,17 @@ export const FriendlyTelemetryInspector: React.FC<FriendlyTelemetryInspectorProp
       {/* Friendly Inspector Header */}
       <div className="p-5 sm:p-6 bg-slate-950 border-b border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs uppercase font-semibold tracking-wider text-slate-400">
               Inspection Report
             </span>
             <span className="text-slate-600">•</span>
             <span className="text-xs text-indigo-400 font-medium">{endpoint.system.osName}</span>
+            <span className="text-slate-600">•</span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono">
+              <BarChart3 className="w-3 h-3 text-indigo-400" />
+              {countScannedMetrics(endpoint).totalScanned} Items Scanned
+            </span>
           </div>
           <h3 className="text-xl font-bold text-white font-mono mt-0.5">{endpoint.system.hostname}</h3>
           <p className="text-xs text-slate-400 mt-1">
@@ -269,6 +277,9 @@ export const FriendlyTelemetryInspector: React.FC<FriendlyTelemetryInspectorProp
             </p>
           </div>
         </div>
+
+        {/* Dedicated Scanned Metrics & Telemetry Inventory Section */}
+        <ScannedMetricsSection endpoint={endpoint} variant="friendly" defaultExpanded={true} />
 
         {/* Collapsible Technical Details (Uncluttered by default!) */}
         <div className="border border-slate-800 rounded-xl overflow-hidden">

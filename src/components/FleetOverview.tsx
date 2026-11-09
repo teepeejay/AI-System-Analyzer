@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { EndpointTelemetry, OperatingSystem, IncidentSeverity } from '../types/sentinel.js';
+import { countScannedMetrics } from '../utils/metricCounter.js';
 import { 
   Server, 
   AlertOctagon, 
@@ -11,7 +12,8 @@ import {
   Activity, 
   Clock, 
   ExternalLink,
-  Filter
+  Filter,
+  BarChart3
 } from 'lucide-react';
 
 interface FleetOverviewProps {
@@ -294,11 +296,15 @@ export const FleetOverview: React.FC<FleetOverviewProps> = ({
                         <div className="flex items-center gap-3">
                           {getPlatformIcon(ep.system.platform)}
                           <div>
-                            <div className="font-bold text-white flex items-center gap-2">
+                            <div className="font-bold text-white flex items-center gap-2 flex-wrap">
                               {ep.system.hostname}
                               {ep.reportedSeverity === 'CRITICAL' && (
                                 <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
                               )}
+                              <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">
+                                <BarChart3 className="w-2.5 h-2.5 text-indigo-400" />
+                                {countScannedMetrics(ep).totalScanned} items
+                              </span>
                             </div>
                             <div className="text-[11px] font-mono text-slate-400">
                               {ep.system.ipAddresses[0] || '127.0.0.1'} • {ep.system.architecture}
